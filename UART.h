@@ -1,7 +1,7 @@
 #include "MKL25Z4.h"
 
-#define UART_TX_PORTE22 22
-#define UART_RX_PORTE23 23
+#define UART_RX_PORTD2 2
+#define UART_TX_PORTD3 3
 #define UART2_INT_PRIO 128
 
 void InitUART2(uint32_t baud_rate) 
@@ -10,11 +10,11 @@ void InitUART2(uint32_t baud_rate)
 	
 	// enable clock to UART and Port E
 	SIM->SCGC4 |= SIM_SCGC4_UART2_MASK;
-	SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
+	SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
 	
-	// connect UART to pins for PTE22, PTE23
-	PORTE->PCR[22] = PORT_PCR_MUX(4);
-	PORTE->PCR[23] = PORT_PCR_MUX(4);
+	// connect UART to pins for PTD2, PTD3
+	PORTD->PCR[UART_RX_PORTD2] |= PORT_PCR_MUX(3);
+	PORTD->PCR[UART_TX_PORTD3] |= PORT_PCR_MUX(3);
 	
 	// ensure txand rxare disabled before configuration
 	UART2->C2 &= ~(UARTLP_C2_TE_MASK | UARTLP_C2_RE_MASK);

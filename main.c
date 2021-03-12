@@ -18,109 +18,183 @@
 
 #define BAUD_RATE 9600
 
-/*----------------------------------------------------------------------------
- * Instruction set list
- *---------------------------------------------------------------------------*/
-void chooseColor(int command)
-{
-	switch (command)
-	{
-		//LED Control Zone
-		case 2:
-			led_control(RED, OFF);
-			break;
-		case 3:
-			led_control(RED, ON);
-			break;
-		case 4:
-			led_control(GREEN, OFF);
-			break;
-		case 5:
-			led_control(GREEN, ON);
-			break;
-	}
-}
+const osThreadAttr_t thread_attr = {
+	.priority = osPriorityNormal1
+};
 
-void driveMotor(int command)
-{
-	int modValue = calculateMODValue(7500);
-	int dutyCycle = modValue;
-	
-	TPM1->MOD = modValue;
-	TPM2->MOD = modValue;
+osMutexId_t myMutex;
 
-	switch (command)
-	{
-		case 6:
-			//Make motor go forward PTB0
-			TPM1_C0V = dutyCycle;
-			TPM1_C1V = 0;
-			
-			TPM2_C0V = dutyCycle;
-			TPM2_C1V = 0;
-			break;
-		case 7:
-			//Make motor go backward PTB1
-			TPM1_C0V = 0;
-			TPM1_C1V = dutyCycle;
-			
-			TPM2_C0V = 0;
-			TPM2_C1V = dutyCycle;
-			break;
-		case 8:
-			//Stop all motors
-			TPM1_C0V = 0;
-			TPM1_C1V = 0;
-		
-			TPM2_C0V = 0;
-			TPM2_C1V = 0;
-			break;
-	}
-}
-
-void selectInstruction(int command)
-{
-	//LED Control Set
-	if (command < 6)
-	{
-		chooseColor(command);
-	}
-	//Motor Control Set
-	else if (command >= 6 && command <= 8)
-	{
-		driveMotor(command);
-	}
-}
-
+//#define MOTOR_MODVALUE 50								// Motor Driver Mod Value
 
 /*----------------------------------------------------------------------------
- * Application main thread
+ * Global Variables
  *---------------------------------------------------------------------------*/
-void app_main(void *arguments) {
+volatile int UARTCommand = 0;							// Updated through UART interrupt
+int motorSelection = 0;
+int LEDMode = 20;
+int audioMode = 30;
 
-	int selection;
-	
+/*----------------------------------------------------------------------------
+ * Motor control thread - tMotor
+ *---------------------------------------------------------------------------*/
+void tMotor(void *arguments)
+{
 	for (;;)
 	{
-		//Receive UART instructions
-		selection = UART2_Receive_Poll();
-		selectInstruction(selection);
+		int modvalue = calculateMODValue(7500);
+		int dutyCycle = modvalue;
+		
+		// Set PWM Mod values for TPM1 and TPM2 (Motors)
+		TPM1->MOD = modvalue;
+		TPM2->MOD = modvalue;
+		
+		switch (motorSelection)
+		{
+			case 0:
+				//Stop
+				TPM1_C0V = 0;
+				TPM1_C1V = 0;
+		
+				TPM2_C0V = 0;
+				TPM2_C1V = 0;
+				break;
+			case 1:
+				//Forward
+				TPM1_C0V = dutyCycle;
+				TPM1_C1V = 0;
+			
+				TPM2_C0V = dutyCycle;
+				TPM2_C1V = 0;
+				break;
+			case 2:
+				//Reverse
+				TPM1_C0V = 0;
+				TPM1_C1V = dutyCycle;
+			
+				TPM2_C0V = 0;
+				TPM2_C1V = dutyCycle;
+				break;
+			case 3:
+				//Pivot Right
+				TPM2_C0V = dutyCycle;
+				TPM2_C1V = dutyCycle;
+		
+				TPM1_C0V = 0;
+				TPM1_C1V = 0;
+				break;
+			case 4:
+				//Pivot Left
+				TPM1_C0V = dutyCycle;
+				TPM1_C1V = dutyCycle;
+		
+				TPM2_C0V = 0;
+				TPM2_C1V = 0;
+				break;
+			case 5:
+				//Moving Right
+				TPM1_C0V = dutyCycle / 2;
+				TPM1_C1V = 0;
+			
+				TPM2_C0V = dutyCycle;
+				TPM2_C1V = 0;
+				break;
+			case 6:
+				//Moving Left
+				TPM1_C0V = dutyCycle;
+				TPM1_C1V = 0;
+			
+				TPM2_C0V = dutyCycle / 2;
+				TPM2_C1V = 0;
+				break;
+		}
 	}
 }
 
 /*----------------------------------------------------------------------------
- * Application sub threads
+ * LED Control Thread - tLED
+ *---------------------------------------------------------------------------*/
+void tLED(void *arguments)
+{
+	for (;;)
+	{
+		switch (LEDMode)
+		{
+			//LED Control Zone
+			case 20:
+				led_control(RED, OFF);
+				break;
+			case 21:
+				led_control(RED, ON);
+				break;
+			case 22:
+				led_control(GREEN, OFF);
+				break;
+			case 23:
+				led_control(GREEN, ON);
+				break;
+		}
+	}
+}
+
+/*----------------------------------------------------------------------------
+ * LED Control Thread - tAudio
+ *---------------------------------------------------------------------------*/
+void tAudio(void *arguments)
+{
+	for (;;)
+	{
+		switch (audioMode)
+		{
+			case 30:
+				break;
+		}
+	}
+}
+
+/*----------------------------------------------------------------------------
+ * Application main thread - tBrain
+ *---------------------------------------------------------------------------*/
+void tBrain(void *arguments) 
+{
+	//Receive UART instructions via interrupt, set global variable as interrupt instruction
+	//tBrain will sort number, and set global variables accordingly - if number == 10, set DIRECTION = 10, DIRECTION = global variable
+	//Should have highest priority as have to process UART data as it appears --> Else loss of data
+	for (;;)
+	{
+		int command = UARTCommand;
+		
+		if (command < 20)
+		{
+			motorSelection = command;
+		}
+		else if (command < 30)
+		{
+			LEDMode = command;
+		}
+		else if (command < 40)
+		{
+			audioMode = command;
+		}
+	}
+}
+
+/*----------------------------------------------------------------------------
+ * LAB CODE - TO REMOVE
  *---------------------------------------------------------------------------*/
 void led_red_thread(void *argument) {
 	
-  for (;;) 
+	for (;;) 
 	{
+		osMutexAcquire(myMutex, osWaitForever);
+		
 		led_control(RED, ON);
-		//osDelay(1000);
-		delay(0x80000);
+		osDelay(1000);
+		//delay(0x80000);
 		led_control(RED, OFF);
-		//osDelay(1000);
-		delay(0x80000);
+		osDelay(1000);
+		//delay(0x80000);
+		
+		osMutexRelease(myMutex);
 	}
 }
 
@@ -128,14 +202,64 @@ void led_green_thread(void *argument) {
 	
 	for (;;) 
 	{
+		osMutexAcquire(myMutex, osWaitForever);
+		
 		led_control(GREEN, ON);
-		//osDelay(1000);
-		delay(0x80000);
+		osDelay(1000);
+		//delay(0x80000);
 		led_control(GREEN, OFF);
-		//osDelay(1000);
-		delay(0x80000);
+		osDelay(1000);
+		//delay(0x80000);
+		
+		osMutexRelease(myMutex);
 	}
 }
+
+/*----------------------------------------------------------------------------
+ * LAB CODE - TO REMOVE
+ *---------------------------------------------------------------------------*/
+
+
+/*----------------------------------------------------------------------------
+ * TEST CODE - TO REMOVE
+ *---------------------------------------------------------------------------*/
+void toggleLED(void *argument)
+{
+	for (;;)
+	{
+		osDelay(2000);
+		UARTCommand = 21;
+		osDelay(2000);
+		UARTCommand = 20;
+		osDelay(2000);
+		UARTCommand = 23;
+		osDelay(2000);
+		UARTCommand = 22;
+	}
+}
+
+void toggleMOTOR(void *argument)
+{
+	for (;;)
+	{
+		osDelay(1000);
+		UARTCommand = 1;
+		osDelay(1000);
+		UARTCommand = 2;
+		osDelay(1000);
+		UARTCommand = 3;
+		osDelay(1000);
+		UARTCommand = 4;
+		osDelay(1000);
+		UARTCommand = 5;
+		osDelay(1000);
+		UARTCommand = 6;
+	}
+}
+
+/*----------------------------------------------------------------------------
+ * TEST CODE - TO REMOVE
+ *---------------------------------------------------------------------------*/
  
 int main (void) {
  
@@ -143,14 +267,22 @@ int main (void) {
   SystemCoreClockUpdate();
 	InitGPIO();
 	InitUART2(BAUD_RATE);
+	initPWM();
 	
 	// Set all RGB values to 1, to turn off
 	offLED();
  
   osKernelInitialize();                 // Initialize CMSIS-RTOS
+	myMutex = osMutexNew(NULL);
 	
 	//Create threads
-	osThreadNew(app_main, NULL, NULL);
+	osThreadNew(tBrain, NULL, NULL);
+	osThreadNew(tMotor, NULL, NULL);
+	osThreadNew(tLED, NULL, NULL);
+	osThreadNew(tAudio, NULL, NULL);
+	
+	osThreadNew(toggleLED, NULL, NULL);
+	osThreadNew(toggleMOTOR, NULL, NULL);
 	//osThreadNew(led_red_thread, NULL, NULL);
 	//osThreadNew(led_green_thread, NULL, NULL);
 	
