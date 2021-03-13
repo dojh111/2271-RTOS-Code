@@ -11,12 +11,14 @@
 #ifdef Delay
 #include "Delay.h"
 #endif
+#define MASK(x) (1 << (x))
 
 #include "GPIO.h"
 #include "UART.h"
 #include "PWM.h"
 
 #define BAUD_RATE 9600
+#define UART_RECEIVE_PTD2 2
 
 const osThreadAttr_t thread_attr = {
 	.priority = osPriorityNormal1
@@ -30,9 +32,21 @@ osMutexId_t myMutex;
  * Global Variables
  *---------------------------------------------------------------------------*/
 volatile int UARTCommand = 0;							// Updated through UART interrupt
-int motorSelection = 0;
-int LEDMode = 20;
-int audioMode = 30;
+volatile int motorSelection = 0;
+volatile int LEDMode = 20;
+volatile int audioMode = 30;
+
+/*----------------------------------------------------------------------------
+ * Interrupt Handlers
+ *---------------------------------------------------------------------------*/
+void UART2_IRQHandler()
+{
+	// Read data from incoming UART port
+	UARTCommand = UART2_Receive_Poll();
+	
+	// Clear INT flag
+	PORTD->ISFR |= MASK(UART_RECEIVE_PTD2);
+}
 
 /*----------------------------------------------------------------------------
  * Motor control thread - tMotor

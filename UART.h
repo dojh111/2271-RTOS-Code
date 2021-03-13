@@ -1,7 +1,7 @@
 #include "MKL25Z4.h"
 
-#define UART_RX_PORTD2 2
 #define UART_TX_PORTD3 3
+#define UART_RX_PORTD2 2
 #define UART2_INT_PRIO 128
 
 void InitUART2(uint32_t baud_rate) 
@@ -13,7 +13,7 @@ void InitUART2(uint32_t baud_rate)
 	SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
 	
 	// connect UART to pins for PTD2, PTD3
-	PORTD->PCR[UART_RX_PORTD2] |= PORT_PCR_MUX(3);
+	PORTD->PCR[UART_RX_PORTD2] |= (PORT_PCR_MUX(3) | PORT_PCR_IRQC(0x0a)); //Set interrupt on falling edge
 	PORTD->PCR[UART_TX_PORTD3] |= PORT_PCR_MUX(3);
 	
 	// ensure txand rxare disabled before configuration
@@ -32,6 +32,11 @@ void InitUART2(uint32_t baud_rate)
 	
 	// Enable transmitter and receiver
 	UART2->C2 |= UART_C2_TE_MASK | UART_C2_RE_MASK;
+	
+	//Enable Interrupts for UART2
+	NVIC_SetPriority(UART2_IRQn, 2);
+	NVIC_ClearPendingIRQ(UART2_IRQn);
+	NVIC_EnableIRQ(UART2_IRQn);
 }
 
 void UART2_Transmit_Poll(uint8_t data) 
