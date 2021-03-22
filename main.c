@@ -18,7 +18,6 @@
 #include "PWM.h"
 
 #define BAUD_RATE 9600
-#define UART_RECEIVE_PTD2 2
 
 const osThreadAttr_t thread_attr = {
 	.priority = osPriorityNormal1
@@ -26,12 +25,10 @@ const osThreadAttr_t thread_attr = {
 
 osMutexId_t myMutex;
 
-//#define MOTOR_MODVALUE 50								// Motor Driver Mod Value
-
 /*----------------------------------------------------------------------------
  * Global Variables
  *---------------------------------------------------------------------------*/
-volatile int UARTCommand = 0;							// Updated through UART interrupt
+volatile uint8_t UARTCommand = 0;							// Updated through UART interrupt
 volatile int motorSelection = 0;
 volatile int LEDMode = 20;
 volatile int audioMode = 30;
@@ -42,10 +39,15 @@ volatile int audioMode = 30;
 void UART2_IRQHandler()
 {
 	// Read data from incoming UART port
-	UARTCommand = UART2_Receive_Poll();
+	if (UART2->S1 & UART_S1_RDRF_MASK)
+	{
+		UARTCommand = UART2->D;
+	}
 	
-	// Clear INT flag
-	PORTD->ISFR |= MASK(UART_RECEIVE_PTD2);
+	// Error cases
+	if (UART2->S1 & (UART_S1_OR_MASK | UART_S1_NF_MASK | UART_S1_FE_MASK | UART_S1_PF_MASK))
+	{
+	}
 }
 
 /*----------------------------------------------------------------------------
@@ -55,7 +57,7 @@ void tMotor(void *arguments)
 {
 	for (;;)
 	{
-		int modvalue = calculateMODValue(7500);
+		int modvalue = calculateMODValue(50);
 		int dutyCycle = modvalue;
 		
 		// Set PWM Mod values for TPM1 and TPM2 (Motors)
@@ -127,24 +129,32 @@ void tMotor(void *arguments)
 /*----------------------------------------------------------------------------
  * LED Control Thread - tLED
  *---------------------------------------------------------------------------*/
+// Control current LED pattern to be displayed on robot
 void tLED(void *arguments)
 {
 	for (;;)
 	{
 		switch (LEDMode)
 		{
-			//LED Control Zone
+			// Running Mode - Front green LED Running mode (1 LED at a time) + RED flashing 500ms ON/OFF
 			case 20:
-				led_control(RED, OFF);
 				break;
+			// Stationary Mode - Front green LED all lit up + RED flashing 250ms ON/OFF
 			case 21:
-				led_control(RED, ON);
 				break;
+			
+			//Test Mode Lighting Effect - Onboard LED
 			case 22:
 				led_control(GREEN, OFF);
 				break;
 			case 23:
 				led_control(GREEN, ON);
+				break;
+			case 24:
+				led_control(RED, OFF);
+				break;
+			case 25:
+				led_control(RED, ON);
 				break;
 		}
 	}
@@ -159,7 +169,11 @@ void tAudio(void *arguments)
 	{
 		switch (audioMode)
 		{
+			// Default Song
 			case 30:
+				break;
+			// End Song
+			case 31:
 				break;
 		}
 	}
@@ -175,19 +189,18 @@ void tBrain(void *arguments)
 	//Should have highest priority as have to process UART data as it appears --> Else loss of data
 	for (;;)
 	{
-		int command = UARTCommand;
-		
-		if (command < 20)
+		if (UARTCommand < 20)
 		{
-			motorSelection = command;
+			if (UARTCommand == 0) {} //If stop, update LEDMode = 21;
+			motorSelection = UARTCommand;
 		}
-		else if (command < 30)
+		else if (UARTCommand < 30)
 		{
-			LEDMode = command;
+			LEDMode = UARTCommand;
 		}
-		else if (command < 40)
+		else if (UARTCommand < 40)
 		{
-			audioMode = command;
+			audioMode = UARTCommand;
 		}
 	}
 }
@@ -235,39 +248,53 @@ void led_green_thread(void *argument) {
 
 
 /*----------------------------------------------------------------------------
- * TEST CODE - TO REMOVE
+ * TEST & DEBUGGING CODE - TO REMOVE
  *---------------------------------------------------------------------------*/
+// Flash on board LED between red and green
 void toggleLED(void *argument)
 {
 	for (;;)
 	{
 		osDelay(2000);
-		UARTCommand = 21;
-		osDelay(2000);
-		UARTCommand = 20;
-		osDelay(2000);
 		UARTCommand = 23;
 		osDelay(2000);
 		UARTCommand = 22;
+		osDelay(2000);
+		UARTCommand = 25;
+		osDelay(2000);
+		UARTCommand = 24;
 	}
 }
 
+// Repeatedly drive motors in all directions to move motor
 void toggleMOTOR(void *argument)
 {
 	for (;;)
 	{
-		osDelay(1000);
+		UARTCommand = 0;
+		osDelay(500);
 		UARTCommand = 1;
-		osDelay(1000);
+		osDelay(300);
+		UARTCommand = 0;
+		osDelay(500);
 		UARTCommand = 2;
-		osDelay(1000);
+		osDelay(300);
+		UARTCommand = 0;
+		osDelay(500);
 		UARTCommand = 3;
-		osDelay(1000);
+		osDelay(300);
+		UARTCommand = 0;
+		osDelay(500);
 		UARTCommand = 4;
-		osDelay(1000);
+		osDelay(300);
+		UARTCommand = 0;
+		osDelay(500);
 		UARTCommand = 5;
-		osDelay(1000);
+		osDelay(300);
+		UARTCommand = 0;
+		osDelay(500);
 		UARTCommand = 6;
+		osDelay(300);
 	}
 }
 
@@ -275,13 +302,14 @@ void toggleMOTOR(void *argument)
  * TEST CODE - TO REMOVE
  *---------------------------------------------------------------------------*/
  
-int main (void) {
+int main (void) 
+{
  
   // System Initialization
   SystemCoreClockUpdate();
 	InitGPIO();
 	InitUART2(BAUD_RATE);
-	initPWM();
+	InitPWM();
 	
 	// Set all RGB values to 1, to turn off
 	offLED();

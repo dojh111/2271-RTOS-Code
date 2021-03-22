@@ -1,7 +1,7 @@
 #include "MKL25Z4.h"
 
-#define UART_TX_PORTD3 3
-#define UART_RX_PORTD2 2
+#define UART_TX_PORTE22 22
+#define UART_RX_PORTE23 23
 #define UART2_INT_PRIO 128
 
 void InitUART2(uint32_t baud_rate) 
@@ -10,11 +10,11 @@ void InitUART2(uint32_t baud_rate)
 	
 	// enable clock to UART and Port E
 	SIM->SCGC4 |= SIM_SCGC4_UART2_MASK;
-	SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
+	SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
 	
 	// connect UART to pins for PTD2, PTD3
-	PORTD->PCR[UART_RX_PORTD2] |= (PORT_PCR_MUX(3) | PORT_PCR_IRQC(0x0a)); //Set interrupt on falling edge
-	PORTD->PCR[UART_TX_PORTD3] |= PORT_PCR_MUX(3);
+	PORTE->PCR[UART_TX_PORTE22] |= PORT_PCR_MUX(4);
+	PORTE->PCR[UART_RX_PORTE23] |= PORT_PCR_MUX(4);
 	
 	// ensure txand rxare disabled before configuration
 	UART2->C2 &= ~(UARTLP_C2_TE_MASK | UARTLP_C2_RE_MASK);
@@ -30,27 +30,14 @@ void InitUART2(uint32_t baud_rate)
 	UART2->S2 = 0;
 	UART2->C3 = 0;
 	
-	// Enable transmitter and receiver
-	UART2->C2 |= UART_C2_TE_MASK | UART_C2_RE_MASK;
-	
-	//Enable Interrupts for UART2
-	NVIC_SetPriority(UART2_IRQn, 2);
+	// Enable receiver
+	UART2->C2 |= UART_C2_RE_MASK;
+
+	// Enable Interrupts for UART2
+	NVIC_SetPriority(UART2_IRQn, UART2_INT_PRIO);
 	NVIC_ClearPendingIRQ(UART2_IRQn);
 	NVIC_EnableIRQ(UART2_IRQn);
-}
-
-void UART2_Transmit_Poll(uint8_t data) 
-{
-	// wait until transmit data register is empty
-	while (!(UART2->S1 & UART_S1_TDRE_MASK))
-	;
-	UART2->D = data;
-}
-
-uint8_t UART2_Receive_Poll(void) 
-{
-	// wait until receive data register is full
-	while (!(UART2->S1 & UART_S1_RDRF_MASK))
-	;
-	return UART2->D;
+	
+	// Enable UART2 interrupts for receive
+	UART2->C2 |= UART_C2_RIE_MASK;
 }

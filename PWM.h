@@ -15,7 +15,7 @@
 int musicalNotes[] = {131, 147, 165, 175, 196, 220, 247, 262, 294, 330, 349, 392, 440, 494, 523};
 
 // Initialise PWM
-void initPWM(void)
+void InitPWM(void)
 {
 	// Enable power to the PORTB sub unit
 	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
