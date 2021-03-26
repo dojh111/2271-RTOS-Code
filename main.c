@@ -16,6 +16,7 @@
 #include "GPIO.h"
 #include "UART.h"
 #include "PWM.h"
+#include "LED.h"
 
 #define BAUD_RATE 9600
 
@@ -138,9 +139,34 @@ void tLED(void *arguments)
 		{
 			// Running Mode - Front green LED Running mode (1 LED at a time) + RED flashing 500ms ON/OFF
 			case 20:
+				while(1)
+				{
+					greenLEDMoving(counterLED);
+					onLEDred();
+					osDelay(500);
+					if (LEDMode != 20)
+						break;
+					offLEDred();
+					osDelay(500);
+					counterLED++;
+					if (LEDMode != 20)
+						break;
+				}
 				break;
 			// Stationary Mode - Front green LED all lit up + RED flashing 250ms ON/OFF
 			case 21:
+				while(1)
+				{
+					onLEDgreen();
+					onLEDred();
+					osDelay(250);
+					if (LEDMode != 21)
+						break;
+					offLEDred();
+					osDelay(250);
+					if (LEDMode != 21)
+						break;
+				}
 				break;
 			
 			//Test Mode Lighting Effect - Onboard LED
@@ -255,14 +281,10 @@ void toggleLED(void *argument)
 {
 	for (;;)
 	{
-		osDelay(2000);
-		UARTCommand = 23;
-		osDelay(2000);
-		UARTCommand = 22;
-		osDelay(2000);
-		UARTCommand = 25;
-		osDelay(2000);
-		UARTCommand = 24;
+		UARTCommand = 20;
+		osDelay(5000);
+		UARTCommand = 21;
+		osDelay(5000);
 	}
 }
 
@@ -308,6 +330,8 @@ int main (void)
   // System Initialization
   SystemCoreClockUpdate();
 	InitGPIO();
+	InitGPIOgreen();
+	InitGPIOred();
 	InitUART2(BAUD_RATE);
 	InitPWM();
 	
@@ -324,7 +348,7 @@ int main (void)
 	osThreadNew(tAudio, NULL, NULL);
 	
 	osThreadNew(toggleLED, NULL, NULL);
-	osThreadNew(toggleMOTOR, NULL, NULL);
+	//osThreadNew(toggleMOTOR, NULL, NULL);
 	//osThreadNew(led_red_thread, NULL, NULL);
 	//osThreadNew(led_green_thread, NULL, NULL);
 	
