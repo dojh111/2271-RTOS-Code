@@ -1,10 +1,12 @@
 /*----------------------------------------------------------------------------
  * CMSIS-RTOS 'main' function template
  *---------------------------------------------------------------------------*/
- 
+
+#ifdef RTE_Components
 #include "RTE_Components.h"
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
+#endif
 
 #include "MKL25Z4.h"                    // Device header
 
@@ -197,6 +199,7 @@ void tAudio(void *arguments)
 		{
 			// Default Song
 			case 30:
+				playMusicalNotes();
 				break;
 			// End Song
 			case 31:
@@ -217,7 +220,15 @@ void tBrain(void *arguments)
 	{
 		if (UARTCommand < 20)
 		{
-			if (UARTCommand == 0) {} //If stop, update LEDMode = 21;
+			// Update LED pattern when not moving
+			if (UARTCommand == 0) 
+			{
+				LEDMode = 21;
+			}
+			else
+			{
+				LEDMode = 20;
+			}
 			motorSelection = UARTCommand;
 		}
 		else if (UARTCommand < 30)
@@ -230,48 +241,6 @@ void tBrain(void *arguments)
 		}
 	}
 }
-
-/*----------------------------------------------------------------------------
- * LAB CODE - TO REMOVE
- *---------------------------------------------------------------------------*/
-void led_red_thread(void *argument) {
-	
-	for (;;) 
-	{
-		osMutexAcquire(myMutex, osWaitForever);
-		
-		led_control(RED, ON);
-		osDelay(1000);
-		//delay(0x80000);
-		led_control(RED, OFF);
-		osDelay(1000);
-		//delay(0x80000);
-		
-		osMutexRelease(myMutex);
-	}
-}
-
-void led_green_thread(void *argument) {
-	
-	for (;;) 
-	{
-		osMutexAcquire(myMutex, osWaitForever);
-		
-		led_control(GREEN, ON);
-		osDelay(1000);
-		//delay(0x80000);
-		led_control(GREEN, OFF);
-		osDelay(1000);
-		//delay(0x80000);
-		
-		osMutexRelease(myMutex);
-	}
-}
-
-/*----------------------------------------------------------------------------
- * LAB CODE - TO REMOVE
- *---------------------------------------------------------------------------*/
-
 
 /*----------------------------------------------------------------------------
  * TEST & DEBUGGING CODE - TO REMOVE
@@ -347,10 +316,9 @@ int main (void)
 	osThreadNew(tLED, NULL, NULL);
 	osThreadNew(tAudio, NULL, NULL);
 	
+	// Temp Threads - For testing purposes
 	osThreadNew(toggleLED, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
-	//osThreadNew(led_red_thread, NULL, NULL);
-	//osThreadNew(led_green_thread, NULL, NULL);
 	
   osKernelStart();                      // Start thread execution
 	
