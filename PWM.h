@@ -89,13 +89,25 @@ int calculateMODValue(int targetFrequency)
 }
 
 // Plays musical notes according to delay
-void playMusicalNotes()
+void playBlindingLights()
 {
 	for (int i = 0; i < BLINDING_LIGHTS_NOTE_COUNT; i++)
 	{
 		int modValue = calculateMODValue(blindingLights[i]);
 		TPM0->MOD = modValue;
 		TPM0_C3V = modValue * 0.2;
-		osDelay(blindingLightsTemp[i]);
+		osDelay(blindingLightsTempo[i]);
+	}
+}
+
+// Plays musical notes according to delay
+void playTakeOnMe()
+{
+	for (int i = 0; i < TAKE_ON_ME_NOTE_COUNT; i++)
+	{
+		int modValue = calculateMODValue(takeOnMe[i]);
+		TPM0->MOD = modValue;
+		TPM0_C3V = modValue * 0.2;
+		osDelay(takeOnMeTempo[i]);
 	}
 }

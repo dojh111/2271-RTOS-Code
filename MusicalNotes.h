@@ -26,11 +26,69 @@
 
 #define SCALE_NOTE_COUNT 13
 #define BLINDING_LIGHTS_NOTE_COUNT 47
+#define TAKE_ON_ME_NOTE_COUNT 50
 
 
 //Musical note target frequencies
 int scale[] = {CNOTE, CSHARP, DNOTE, DSHARP, ENOTE, FNOTE, FSHARP, GNOTE, GSHARP, ANOTE, ASHARP, BNOTE, HIGHCNOTE};
 
+//Take-on-me riff
+int takeOnMe[] = {
+									FSHARP, BLANK,
+									FSHARP, BLANK,
+									DNOTE, BLANK,
+									BNOTE, BLANK, //Need change to the lower BNOTE
+									BNOTE, BLANK,
+									ENOTE, BLANK,
+									ENOTE, BLANK,
+									ENOTE, BLANK,
+									GSHARP, BLANK,
+									GSHARP, BLANK,
+									GSHARP, BLANK,
+									ANOTE, BLANK,
+									BNOTE, BLANK,
+									ANOTE, BLANK,
+									ANOTE, BLANK,
+									ANOTE, BLANK,
+									ENOTE, BLANK,
+									DNOTE, BLANK,
+									FSHARP, BLANK,
+									FSHARP, BLANK,
+									FSHARP, BLANK,
+									ENOTE, BLANK,
+									ENOTE, BLANK,
+									FSHARP, BLANK,
+									ENOTE, BLANK
+								 };
+
+int takeOnMeTempo[] = {
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, QUAVER,
+												QUAVER, QUAVER,
+												QUAVER, QUAVER,
+												QUAVER, QUAVER,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, QUAVER,
+												QUAVER, QUAVER,
+												QUAVER, QUAVER,
+												QUAVER, QUAVER,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+												QUAVER, BREAK,
+											};
+
+//Blinding Lights riff
 int blindingLights[] = {
 												FNOTE, BLANK, 
 												FNOTE, BLANK, 
@@ -58,7 +116,8 @@ int blindingLights[] = {
 												//Pause
 												BLANK
 												};
-int blindingLightsTemp[] = 
+
+int blindingLightsTempo[] = 
 												{
 													MINIM, BREAK,
 													CROTCHETHALF, BREAK,

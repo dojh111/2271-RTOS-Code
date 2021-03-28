@@ -199,10 +199,11 @@ void tAudio(void *arguments)
 		{
 			// Default Song
 			case 30:
-				playMusicalNotes();
+				playBlindingLights();
 				break;
 			// End Song
 			case 31:
+				playTakeOnMe();
 				break;
 		}
 	}
@@ -254,6 +255,17 @@ void toggleLED(void *argument)
 		osDelay(5000);
 		UARTCommand = 21;
 		osDelay(5000);
+	}
+}
+
+void toggleAudio(void *argument)
+{
+	for (;;)
+	{
+		UARTCommand = 30;
+		osDelay(12000);
+		UARTCommand = 31;
+		osDelay(12000);
 	}
 }
 
@@ -318,6 +330,7 @@ int main (void)
 	
 	// Temp Threads - For testing purposes
 	osThreadNew(toggleLED, NULL, NULL);
+	osThreadNew(toggleAudio, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
 	
   osKernelStart();                      // Start thread execution
