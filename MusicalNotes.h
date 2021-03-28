@@ -1,4 +1,5 @@
 //Notes are all in 6th octave (Soprano)
+#define LOWBNOTE 988
 #define CNOTE 1047
 #define CSHARP 1109
 #define DNOTE 1175
@@ -37,8 +38,8 @@ int takeOnMe[] = {
 									FSHARP, BLANK,
 									FSHARP, BLANK,
 									DNOTE, BLANK,
-									BNOTE, BLANK, //Need change to the lower BNOTE
-									BNOTE, BLANK,
+									LOWBNOTE, BLANK,
+									LOWBNOTE, BLANK,
 									ENOTE, BLANK,
 									ENOTE, BLANK,
 									ENOTE, BLANK,
