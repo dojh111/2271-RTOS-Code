@@ -72,15 +72,15 @@ void PIT_IRQHandler()
  *---------------------------------------------------------------------------*/
 void tMotor(void *arguments)
 {
+	int modvalue = calculateMODValue(50);
+	int dutyCycle = modvalue;
+		
+	// Set PWM Mod values for TPM1 and TPM2 (Motors)
+	TPM1->MOD = modvalue;
+	TPM2->MOD = modvalue;
+	
 	for (;;)
 	{
-		int modvalue = calculateMODValue(50);
-		int dutyCycle = modvalue;
-		
-		// Set PWM Mod values for TPM1 and TPM2 (Motors)
-		TPM1->MOD = modvalue;
-		TPM2->MOD = modvalue;
-		
 		switch (motorSelection)
 		{
 			case 0:
@@ -239,11 +239,11 @@ void tBrain(void *arguments)
 			// Update LED pattern when not moving
 			if (UARTCommand == 0) 
 			{
-				LEDMode = 21;
+				LEDMode = 23;
 			}
 			else
 			{
-				LEDMode = 20;
+				LEDMode = 22;
 			}
 			motorSelection = UARTCommand;
 		}
@@ -337,9 +337,6 @@ int main (void)
  
   osKernelInitialize();                 // Initialize CMSIS-RTOS
 	myMutex = osMutexNew(NULL);
-	
-	//Start PIT Timer
-	PIT_TCTRL0 |= PIT_TCTRL_TEN_MASK;
 	
 	//Create threads
 	osThreadNew(tBrain, NULL, NULL);
