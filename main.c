@@ -19,6 +19,7 @@
 #include "UART.h"
 #include "PWM.h"
 #include "LED.h"
+#include "Ultrasonic.h"
 
 #define BAUD_RATE 9600
 
@@ -51,6 +52,19 @@ void UART2_IRQHandler()
 	if (UART2->S1 & (UART_S1_OR_MASK | UART_S1_NF_MASK | UART_S1_FE_MASK | UART_S1_PF_MASK))
 	{
 	}
+}
+
+// Interrupt called every 5us
+void PIT_IRQHandler()
+{
+	int x = 0;
+	for(int i = 0; i < 5; i++)
+	{
+		x++;
+	}
+	
+	// Clear Interrupt flag
+	PIT_TFLG0 |= PIT_TFLG_TIF_MASK;
 }
 
 /*----------------------------------------------------------------------------
@@ -315,12 +329,16 @@ int main (void)
 	InitGPIOred();
 	InitUART2(BAUD_RATE);
 	InitPWM();
+	InitPIT();
 	
 	// Set all RGB values to 1, to turn off
 	offLED();
  
   osKernelInitialize();                 // Initialize CMSIS-RTOS
 	myMutex = osMutexNew(NULL);
+	
+	//Start PIT Timer
+	PIT_TCTRL0 |= PIT_TCTRL_TEN_MASK;
 	
 	//Create threads
 	osThreadNew(tBrain, NULL, NULL);
