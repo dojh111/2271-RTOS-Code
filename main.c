@@ -212,14 +212,15 @@ void tAudio(void *arguments)
 	{
 		switch (audioMode)
 		{
-			// Default Song
+			//Off song
 			case 30:
 				soundOff();
 				break;
-			// End Song
+			// Default Song
 			case 31:
 				playBlindingLights();
 				break;
+			// End Song
 			case 32:
 				playTakeOnMe();
 				break;
@@ -280,9 +281,9 @@ void toggleAudio(void *argument)
 {
 	for (;;)
 	{
-		UARTCommand = 30;
-		osDelay(12000);
 		UARTCommand = 31;
+		osDelay(12000);
+		UARTCommand = 32;
 		osDelay(12000);
 	}
 }
