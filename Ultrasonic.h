@@ -21,3 +21,9 @@ void InitPIT()
 	//Start PIT Timer
 	PIT_TCTRL0 |= PIT_TCTRL_TEN_MASK;
 }
+
+void InitUltrasonic()
+{
+	//Enable 1 output and 1 input
+	//PTC12 and PTC13
+}

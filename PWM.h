@@ -111,3 +111,9 @@ void playTakeOnMe()
 		osDelay(takeOnMeTempo[i]);
 	}
 }
+
+// Stops all sound
+void soundOff()
+{
+	
+}

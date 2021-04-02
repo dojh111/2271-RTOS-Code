@@ -214,10 +214,13 @@ void tAudio(void *arguments)
 		{
 			// Default Song
 			case 30:
-				playBlindingLights();
+				soundOff();
 				break;
 			// End Song
 			case 31:
+				playBlindingLights();
+				break;
+			case 32:
 				playTakeOnMe();
 				break;
 		}
