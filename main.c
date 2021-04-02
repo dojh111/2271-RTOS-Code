@@ -139,8 +139,23 @@ void tLED(void *arguments)
 	{
 		switch (LEDMode)
 		{
-			// Running Mode - Front green LED Running mode (1 LED at a time) + RED flashing 500ms ON/OFF
+			// Default Mode - All LEDs are off
 			case 20:
+				offLEDgreen();
+				offLEDred();
+				break;
+			// Connection to Bluetooth Successful - Front green LED flashes twice	
+			case 21:
+				for(int i=0;i<2;i++)
+				{
+					onLEDgreen();
+					osDelay(500);
+					offLEDgreen();
+					osDelay(250);
+				}
+			break;
+			// Running Mode - Front green LED Running mode (1 LED at a time) + RED flashing 500ms ON/OFF
+			case 22:
 				while(1)
 				{
 					greenLEDMoving(counterLED);
@@ -156,7 +171,7 @@ void tLED(void *arguments)
 				}
 				break;
 			// Stationary Mode - Front green LED all lit up + RED flashing 250ms ON/OFF
-			case 21:
+			case 23:
 				while(1)
 				{
 					onLEDgreen();
@@ -169,20 +184,6 @@ void tLED(void *arguments)
 					if (LEDMode != 21)
 						break;
 				}
-				break;
-			
-			//Test Mode Lighting Effect - Onboard LED
-			case 22:
-				led_control(GREEN, OFF);
-				break;
-			case 23:
-				led_control(GREEN, ON);
-				break;
-			case 24:
-				led_control(RED, OFF);
-				break;
-			case 25:
-				led_control(RED, ON);
 				break;
 		}
 	}
