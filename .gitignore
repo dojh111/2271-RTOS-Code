@@ -1,5 +1,6 @@
 # Folders
 /Listings
+Objects/
 Objects
 /Objects
 /RTE
@@ -10,3 +11,9 @@ myRTX.uvguix.alsto
 myRTX.uvguix.dojh1
 myRTX.uvoptx
 myRTX.uvprojx
+
+*.scvd
+*.uvoptx
+*.uvprojx
+*.dojh1
+*.alsto
