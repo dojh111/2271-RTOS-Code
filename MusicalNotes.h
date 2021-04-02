@@ -86,7 +86,7 @@ int takeOnMeTempo[] = {
 												QUAVER, BREAK,
 												QUAVER, BREAK,
 												QUAVER, BREAK,
-												QUAVER, BREAK,
+												BREAK, BREAK,
 											};
 
 //Blinding Lights riff
