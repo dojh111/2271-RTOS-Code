@@ -14,7 +14,7 @@ void InitPIT()
 	PIT_TFLG0 |= PIT_TFLG_TIF_MASK; // Clear Interrupt flag
 	
 	// Enable Interrupts for PIT
-	NVIC_SetPriority(PIT_IRQn, 1);
+	NVIC_SetPriority(PIT_IRQn, 2);
 	NVIC_ClearPendingIRQ(PIT_IRQn);
 	NVIC_EnableIRQ(PIT_IRQn);
 	
