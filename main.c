@@ -23,6 +23,8 @@
 
 #define BAUD_RATE 9600
 
+#define STOP_DISTANCE 25								// Robot ultrasonic sensor stop distance
+
 const osThreadAttr_t thread_attr = {
 	.priority = osPriorityNormal1
 };
@@ -36,6 +38,8 @@ volatile uint8_t UARTCommand = 0;							// Updated through UART interrupt
 volatile int motorSelection = 0;
 volatile int LEDMode = 20;
 volatile int audioMode = 30;
+
+volatile int manualMode = 1;
 
 /*----------------------------------------------------------------------------
  * Interrupt Handlers
@@ -56,12 +60,41 @@ void UART2_IRQHandler()
 }
 
 /*----------------------------------------------------------------------------
+ * Self-Driving Mode thread
+ *---------------------------------------------------------------------------*/
+void tSelfDrivingMode(void *arguments)
+{
+	// Turn on GREEN Led to signal selfDrivingMode
+	led_control(GREEN, ON);
+	manualMode = 0;
+	
+	UARTCommand = 0;
+	osDelay(300);
+	
+	startRanging();
+	osDelay(100);
+	
+	UARTCommand = 1;
+	osDelay(5);
+	// Constantly range distance and move forward
+	while (distance > STOP_DISTANCE)
+	{
+		startRanging();
+		osDelay(100);
+	}
+	
+	UARTCommand = 0;
+	manualMode = 1;
+	led_control(GREEN, OFF);
+}
+
+/*----------------------------------------------------------------------------
  * Motor control thread - tMotor
  *---------------------------------------------------------------------------*/
 void tMotor(void *arguments)
 {
 	int modvalue = calculateMODValue(50);
-	int dutyCycle = modvalue;
+	int dutyCycle = 0;
 		
 	// Set PWM Mod values for TPM1 and TPM2 (Motors)
 	TPM1->MOD = modvalue;
@@ -69,6 +102,18 @@ void tMotor(void *arguments)
 	
 	for (;;)
 	{
+		// Speed Selection
+		switch (manualMode)
+		{
+			case 0: 
+				dutyCycle = modvalue * 0.2;
+				break;
+			case 1:
+				dutyCycle = modvalue;
+				break;
+		}
+		
+		// Direction
 		switch (motorSelection)
 		{
 			case 0:
@@ -250,6 +295,11 @@ void tBrain(void *arguments)
 		{
 			audioMode = UARTCommand;
 		}
+		//Start self driving mode
+		else if (UARTCommand == 100)
+		{
+			osThreadNew(tSelfDrivingMode, NULL, NULL);
+		}
 	}
 }
 
@@ -316,7 +366,16 @@ void testUltrasonic(void *argument)
 	for (;;)
 	{
 		startRanging();
-		osDelay(300);
+		osDelay(100);
+	}
+}
+
+void toggleSelfDrivingMode(void *argument)
+{
+	for (;;)
+	{
+		osDelay(8000);
+		UARTCommand = 100;
 	}
 }
 
@@ -350,10 +409,11 @@ int main (void)
 	osThreadNew(tAudio, NULL, NULL);
 	
 	// Temp Threads - For testing purposes
-	osThreadNew(testUltrasonic, NULL, NULL);
 	osThreadNew(toggleLED, NULL, NULL);
 	osThreadNew(toggleAudio, NULL, NULL);
+	osThreadNew(toggleSelfDrivingMode, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
+	//osThreadNew(testUltrasonic, NULL, NULL);
 	
   osKernelStart();                      // Start thread execution
 	

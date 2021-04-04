@@ -121,6 +121,7 @@ void InitUltrasonic()
 	
 }
 
+//Starts the process of determining range
 void startRanging()
 {
 	//Reset
