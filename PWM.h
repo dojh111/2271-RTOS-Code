@@ -12,7 +12,7 @@
 #define PTB2_Pin 2 // TPM2_CH0
 #define PTB3_Pin 3 // TPM2_CH1
 
-#define PTE30_Pin 30 // TPM0_CH3
+#define PTE30_Pin 30 // TPM0_CH3 - Speaker
 
 // Default set as 48MHz - Change accordingly
 #define CLOCK_FREQUENCY 48000000
@@ -86,34 +86,4 @@ void InitPWM(void)
 int calculateMODValue(int targetFrequency)
 {
 	return (CLOCK_FREQUENCY / PRESCALAR) / targetFrequency;
-}
-
-// Plays musical notes according to delay
-void playBlindingLights()
-{
-	for (int i = 0; i < BLINDING_LIGHTS_NOTE_COUNT; i++)
-	{
-		int modValue = calculateMODValue(blindingLights[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(blindingLightsTempo[i]);
-	}
-}
-
-// Plays musical notes according to delay
-void playTakeOnMe()
-{
-	for (int i = 0; i < TAKE_ON_ME_NOTE_COUNT; i++)
-	{
-		int modValue = calculateMODValue(takeOnMe[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(takeOnMeTempo[i]);
-	}
-}
-
-// Stops all sound
-void soundOff()
-{
-	TPM0_C3V = 0;
 }
