@@ -54,9 +54,8 @@ void PORTD_IRQHandler()
 			PIT->MCR &= ~PIT_MCR_MDIS_MASK;
 			PIT_TCTRL0 |= PIT_TCTRL_TEN_MASK;
 		}
-	
 		// On dropping edge - Times out after 38ms
-		if (ultrasonicMode == 1)
+		else if (ultrasonicMode == 1)
 		{
 			ultrasonicMode = 0;
 			// Disable PIT Timer
@@ -124,8 +123,11 @@ void InitUltrasonic()
 
 void startRanging()
 {
+	//Reset
 	ultrasonicMode = 0;
 	elapsedTime = 0;
+	
+	PIT->MCR &= ~PIT_MCR_MDIS_MASK;
 	//Start transmission
 	PTD->PSOR |= MASK(PORTD7);
 	//Start PIT Timer

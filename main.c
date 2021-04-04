@@ -311,6 +311,15 @@ void toggleMOTOR(void *argument)
 	}
 }
 
+void testUltrasonic(void *argument)
+{
+	for (;;)
+	{
+		startRanging();
+		osDelay(300);
+	}
+}
+
 /*----------------------------------------------------------------------------
  * TEST CODE - TO REMOVE
  *---------------------------------------------------------------------------*/
@@ -341,6 +350,7 @@ int main (void)
 	osThreadNew(tAudio, NULL, NULL);
 	
 	// Temp Threads - For testing purposes
+	osThreadNew(testUltrasonic, NULL, NULL);
 	osThreadNew(toggleLED, NULL, NULL);
 	osThreadNew(toggleAudio, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
