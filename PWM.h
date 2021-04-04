@@ -115,5 +115,5 @@ void playTakeOnMe()
 // Stops all sound
 void soundOff()
 {
-	
+	TPM0_C3V = 0;
 }

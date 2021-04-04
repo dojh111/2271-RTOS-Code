@@ -40,6 +40,7 @@ volatile int audioMode = 30;
 /*----------------------------------------------------------------------------
  * Interrupt Handlers
  *---------------------------------------------------------------------------*/
+// Interrupt to handle received bluetooth commands
 void UART2_IRQHandler()
 {
 	// Read data from incoming UART port
@@ -52,19 +53,6 @@ void UART2_IRQHandler()
 	if (UART2->S1 & (UART_S1_OR_MASK | UART_S1_NF_MASK | UART_S1_FE_MASK | UART_S1_PF_MASK))
 	{
 	}
-}
-
-// Interrupt called every 5us
-void PIT_IRQHandler()
-{
-	int x = 0;
-	for(int i = 0; i < 5; i++)
-	{
-		x++;
-	}
-	
-	// Clear Interrupt flag
-	PIT_TFLG0 |= PIT_TFLG_TIF_MASK;
 }
 
 /*----------------------------------------------------------------------------
@@ -238,6 +226,7 @@ void tBrain(void *arguments)
 	//Should have highest priority as have to process UART data as it appears --> Else loss of data
 	for (;;)
 	{
+		//Movement Commands
 		if (UARTCommand < 20)
 		{
 			// Update LED pattern when not moving
@@ -251,10 +240,12 @@ void tBrain(void *arguments)
 			}
 			motorSelection = UARTCommand;
 		}
+		//LED Commands
 		else if (UARTCommand < 30)
 		{
 			LEDMode = UARTCommand;
 		}
+		//Audio Commands
 		else if (UARTCommand < 40)
 		{
 			audioMode = UARTCommand;
@@ -335,6 +326,7 @@ int main (void)
 	InitUART2(BAUD_RATE);
 	InitPWM();
 	InitPIT();
+	InitUltrasonic();
 	
 	// Set all RGB values to 1, to turn off
 	offLED();
