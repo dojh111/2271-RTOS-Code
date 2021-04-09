@@ -5,13 +5,13 @@
 
 #define MASK(x)					(1 << (x))
 
-#define CLOCK48MHZCOUNT 239
 #define CLOCK24MHZCOUNT 119
+#define TIMEOUT 10000										// Timeout after 50ms
 
 #define SPEED_OF_SOUND 0.034						// In centimeters per second
 
-volatile int elapsedTime = 0;									// Multiply by 5 to get time in us
-volatile int ultrasonicMode = 0;							// Mode 0 = Transmit, 1 = Echo
+volatile int elapsedTime = 0;						// Multiply by 5 to get time in us
+volatile int ultrasonicMode = 0;				// Mode 0 = Transmit, 1 = Echo
 volatile float distance = 0;
 
 /*----------------------------------------------------------------------------
@@ -32,6 +32,14 @@ void PIT_IRQHandler()
 		elapsedTime = 0;
 		// Disable PIT Timer
 		PIT->MCR |= PIT_MCR_MDIS_MASK;
+	}
+	// PIT Timeout - 50us
+	else if ((ultrasonicMode == 1) && (elapsedTime >= TIMEOUT))
+	{
+			ultrasonicMode = 0;
+			// Disable PIT Timer
+			PIT->MCR |= PIT_MCR_MDIS_MASK;
+			elapsedTime = 0;
 	}
 	
 	// Clear Interrupt flag

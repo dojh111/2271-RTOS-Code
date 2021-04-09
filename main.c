@@ -24,6 +24,7 @@
 #define BAUD_RATE 9600
 
 #define STOP_DISTANCE 25								// Robot ultrasonic sensor stop distance
+#define DISTANCE_ERROR_MARGIN 20				// Margin for error to determine if robot is off course
 
 const osThreadAttr_t thread_attr = {
 	.priority = osPriorityNormal1
@@ -36,10 +37,10 @@ osMutexId_t myMutex;
  *---------------------------------------------------------------------------*/
 volatile uint8_t UARTCommand = 0;							// Updated through UART interrupt
 volatile int motorSelection = 0;
-volatile int LEDMode = 20;
-volatile int audioMode = 30;
+volatile int LEDMode = 23;
+volatile int audioMode = 31;
 
-volatile int manualMode = 1;
+volatile int speedSelection = 1;							// Default at high speed
 
 /*----------------------------------------------------------------------------
  * Interrupt Handlers
@@ -64,27 +65,64 @@ void UART2_IRQHandler()
  *---------------------------------------------------------------------------*/
 void tSelfDrivingMode(void *arguments)
 {
+	int initialDistance;
+	int returnDistance;
+	int lowerMargin;
+	int upperMargin;
+	// Save current speed mode
+	int currentSpeed = speedSelection;
+	
 	// Turn on GREEN Led to signal selfDrivingMode
 	led_control(GREEN, ON);
-	manualMode = 0;
+	speedSelection = 0;
 	
 	UARTCommand = 0;
 	osDelay(300);
 	
+	// Initial range
 	startRanging();
+	initialDistance = distance;
 	osDelay(100);
 	
 	UARTCommand = 1;
-	osDelay(5);
 	// Constantly range distance and move forward
 	while (distance > STOP_DISTANCE)
 	{
 		startRanging();
 		osDelay(100);
 	}
-	
 	UARTCommand = 0;
-	manualMode = 1;
+	osDelay(100);
+	
+	// Initiate Turn Sequence
+	
+	// Initiate Return Sequence
+	startRanging();
+	returnDistance = distance;
+	lowerMargin = initialDistance - DISTANCE_ERROR_MARGIN;
+	upperMargin = initialDistance + DISTANCE_ERROR_MARGIN;
+	
+	// Robot facing correct direction of return cone
+	if ((returnDistance >= lowerMargin) && (returnDistance <= upperMargin))
+	{
+		UARTCommand = 1;
+		// Constantly range distance and move forward
+		while (distance > STOP_DISTANCE)
+		{
+			startRanging();
+			osDelay(100);
+		}
+		UARTCommand = 0;
+	}
+	// Go straight regardless, hardcoded distance
+	else
+	{
+		
+	}
+	
+	// End of self-driving mode
+	UARTCommand = 0;
+	speedSelection = currentSpeed;
 	led_control(GREEN, OFF);
 }
 
@@ -103,14 +141,19 @@ void tMotor(void *arguments)
 	for (;;)
 	{
 		// Speed Selection
-		switch (manualMode)
+		switch (speedSelection)
 		{
+			// Slowest
 			case 0: 
 				dutyCycle = modvalue * 0.2;
 				break;
+			// Fastest
 			case 1:
 				dutyCycle = modvalue;
 				break;
+			// Half speed
+			case 2:
+				dutyCycle = modvalue * 0.5;
 		}
 		
 		// Direction
@@ -142,23 +185,23 @@ void tMotor(void *arguments)
 				break;
 			case 3:
 				//Pivot Right
-				TPM2_C0V = dutyCycle;
-				TPM2_C1V = dutyCycle;
+				TPM2_C0V = dutyCycle * 0.5;
+				TPM2_C1V = dutyCycle * 0.5;
 		
 				TPM1_C0V = 0;
 				TPM1_C1V = 0;
 				break;
 			case 4:
 				//Pivot Left
-				TPM1_C0V = dutyCycle;
-				TPM1_C1V = dutyCycle;
+				TPM1_C0V = dutyCycle * 0.5;
+				TPM1_C1V = dutyCycle * 0.5;
 		
 				TPM2_C0V = 0;
 				TPM2_C1V = 0;
 				break;
 			case 5:
 				//Moving Right
-				TPM1_C0V = dutyCycle * 0.3;
+				TPM1_C0V = dutyCycle * 0.2;
 				TPM1_C1V = 0;
 			
 				TPM2_C0V = dutyCycle;
@@ -169,7 +212,7 @@ void tMotor(void *arguments)
 				TPM1_C0V = dutyCycle;
 				TPM1_C1V = 0;
 			
-				TPM2_C0V = dutyCycle * 0.3;
+				TPM2_C0V = dutyCycle * 0.2;
 				TPM2_C1V = 0;
 				break;
 		}
@@ -200,6 +243,7 @@ void tLED(void *arguments)
 					offLEDgreen();
 					osDelay(250);
 				}
+				LEDMode = 23;
 				break;
 			// Running Mode - Front green LED Running mode (1 LED at a time) + RED flashing 500ms ON/OFF
 			case 22:
@@ -208,12 +252,12 @@ void tLED(void *arguments)
 					greenLEDMoving(counterLED);
 					onLEDred();
 					osDelay(500);
-					if (LEDMode != 20)
+					if (LEDMode != 22)
 						break;
 					offLEDred();
 					osDelay(500);
 					counterLED++;
-					if (LEDMode != 20)
+					if (LEDMode != 22)
 						break;
 				}
 				break;
@@ -224,11 +268,11 @@ void tLED(void *arguments)
 					onLEDgreen();
 					onLEDred();
 					osDelay(250);
-					if (LEDMode != 21)
+					if (LEDMode != 23)
 						break;
 					offLEDred();
 					osDelay(250);
-					if (LEDMode != 21)
+					if (LEDMode != 23)
 						break;
 				}
 				break;
@@ -324,9 +368,8 @@ void tAudio(void *arguments)
 				break;
 			// Default Song
 			case 31:
-				playNokiaRingtone();
-				//playScale();
-				//playBlindingLights();
+				//playNokiaRingtone();
+				playBlindingLights();
 				break;
 			// End Song
 			case 32:
@@ -356,7 +399,7 @@ void tBrain(void *arguments)
 	{
 		int command = UARTCommand;
 		//Movement Commands
-		if (command < 20)
+		if (command < 10)
 		{
 			// Update LED pattern when not moving
 			if (command == 0) 
@@ -369,6 +412,21 @@ void tBrain(void *arguments)
 			}
 			motorSelection = command;
 		}
+		//Speed Selection
+		else if (command < 20)
+		{
+			switch (command)
+			{
+				// High Speed
+				case 15:
+					speedSelection = 1;
+					break;
+				// Half Speed
+				case 16:
+					speedSelection = 2;
+					break;
+			}
+		}
 		//LED Commands
 		else if (command < 30)
 		{
@@ -378,6 +436,13 @@ void tBrain(void *arguments)
 		else if (command < 40)
 		{
 			audioMode = command;
+		}
+		//Connection to bluetooth
+		else if (command == 90)
+		{
+			audioMode = 33;
+			osDelay(100);
+			LEDMode = 21;
 		}
 		//Start self driving mode
 		else if (command == 100)
@@ -497,8 +562,8 @@ int main (void)
 	osThreadNew(tAudio, NULL, NULL);
 	
 	// Test Threads - For testing purposes
-	osThreadNew(toggleLED, NULL, NULL);
-	osThreadNew(toggleAudio, NULL, NULL);
+	//osThreadNew(toggleLED, NULL, NULL);
+	//osThreadNew(toggleAudio, NULL, NULL);
 	//osThreadNew(toggleSelfDrivingMode, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
 	//osThreadNew(testUltrasonic, NULL, NULL);
