@@ -41,7 +41,6 @@
 #define BLINDING_LIGHTS_NOTE_COUNT 46
 #define TAKE_ON_ME_NOTE_COUNT 48
 #define NOKIA_THEME_NOTE_COUNT 10
-#define NOKIA_RINGTONE_NOTE_COUNT 26
 
 
 //Musical note target frequencies
@@ -57,46 +56,12 @@ int nokiaTheme[] = {
 									 };
 
 int nokiaThemeTempo[] = {
+													QUAVER, BREAK,
+													QUAVER, BREAK,
 													CROTCHET, BREAK,
 													CROTCHET, BREAK,
-													MINIM, BREAK,
-													MINIM, BREAK,
-													SEMIBREEVE, BREAK
+													MINIM, BREAK
 												};
-
-//Nokia RINGTONE
-int nokiaRingtone[] = {
-												ENOTE, BLANK,
-												DNOTE, BLANK,	
-												LOWFSHARP, BLANK,
-												LOWGSHARP, BLANK,
-												CSHARP, BLANK,
-												LOWBNOTE, BLANK,
-												LOWDNOTE, BLANK,
-												LOWENOTE, BLANK,
-												LOWBNOTE, BLANK,	
-												LOWANOTE, BLANK,
-												LOWCSHARP, BLANK,
-												LOWENOTE, BLANK,
-												LOWANOTE, BLANK,
-											};
-
-int nokiaRingtoneTempo[] = {
-														QUAVER, BREAK,
-														QUAVER, BREAK,
-														CROTCHET, BREAK,
-														CROTCHET, BREAK,
-														QUAVER, BREAK,
-														QUAVER, BREAK,
-														CROTCHET, BREAK,
-														CROTCHET, BREAK,
-														QUAVER, BREAK,
-														QUAVER, BREAK,
-														CROTCHET, BREAK,
-														CROTCHET, BREAK,
-														THREECOUNT, BREAK
-													 };
-	
 
 //Take-on-me riff
 int takeOnMe[] = {

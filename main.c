@@ -22,23 +22,24 @@
 #include "Ultrasonic.h"
 
 #define BAUD_RATE 9600
+#define UART_NO_COMMAND 101
 
 #define STOP_DISTANCE 25								// Robot ultrasonic sensor stop distance
 #define DISTANCE_ERROR_MARGIN 20				// Margin for error to determine if robot is off course
 
 const osThreadAttr_t thread_attr = {
-	.priority = osPriorityNormal1
+	.priority = osPriorityAboveNormal
 };
 
-osMutexId_t myMutex;
+osSemaphoreId_t startupSem;
 
 /*----------------------------------------------------------------------------
  * Global Variables
  *---------------------------------------------------------------------------*/
-volatile uint8_t UARTCommand = 0;							// Updated through UART interrupt
+volatile uint8_t UARTCommand = UART_NO_COMMAND;							// Updated through UART interrupt
 volatile int motorSelection = 0;
-volatile int LEDMode = 23;
-volatile int audioMode = 31;
+volatile int LEDMode = 20;
+volatile int audioMode = 30;
 
 volatile int speedSelection = 1;							// Default at high speed
 
@@ -63,6 +64,68 @@ void UART2_IRQHandler()
 /*----------------------------------------------------------------------------
  * Self-Driving Mode thread
  *---------------------------------------------------------------------------*/
+// Code for executing turn around cone
+void coneTurn()
+{
+	speedSelection = 1;
+	
+	// Pivot Left
+	UARTCommand = 4;
+	osDelay(325);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Forward
+	UARTCommand = 1;
+	osDelay(350);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Pivot Right
+	UARTCommand = 3;
+	osDelay(450);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Forward
+	UARTCommand = 1;
+	osDelay(350);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Pivot Right
+	UARTCommand = 3;
+	osDelay(450);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Forward
+	UARTCommand = 1;
+	osDelay(300);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Pivot Right
+	UARTCommand = 3;
+	osDelay(600);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Forward
+	UARTCommand = 1;
+	osDelay(400);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	// Pivot Left
+	UARTCommand = 4;
+	osDelay(350);
+	UARTCommand = 0;
+	osDelay(100);
+	
+	speedSelection = 0;
+}
+
 void tSelfDrivingMode(void *arguments)
 {
 	int initialDistance;
@@ -95,6 +158,7 @@ void tSelfDrivingMode(void *arguments)
 	osDelay(100);
 	
 	// Initiate Turn Sequence
+	coneTurn();
 	
 	// Initiate Return Sequence
 	startRanging();
@@ -137,6 +201,8 @@ void tMotor(void *arguments)
 	// Set PWM Mod values for TPM1 and TPM2 (Motors)
 	TPM1->MOD = modvalue;
 	TPM2->MOD = modvalue;
+	
+	osSemaphoreAcquire(startupSem, osWaitForever);
 	
 	for (;;)
 	{
@@ -216,6 +282,7 @@ void tMotor(void *arguments)
 				TPM2_C1V = 0;
 				break;
 		}
+		osDelay(25);
 	}
 }
 
@@ -225,6 +292,10 @@ void tMotor(void *arguments)
 // Control current LED pattern to be displayed on robot
 void tLED(void *arguments)
 {
+	offLEDgreen();
+	offLEDred();
+	osSemaphoreAcquire(startupSem, osWaitForever);
+	
 	for (;;)
 	{
 		switch (LEDMode)
@@ -243,6 +314,7 @@ void tLED(void *arguments)
 					offLEDgreen();
 					osDelay(250);
 				}
+				osDelay(1000);
 				LEDMode = 23;
 				break;
 			// Running Mode - Front green LED Running mode (1 LED at a time) + RED flashing 500ms ON/OFF
@@ -277,6 +349,7 @@ void tLED(void *arguments)
 				}
 				break;
 		}
+		osDelay(100);
 	}
 }
 
@@ -316,23 +389,12 @@ void playNokiaTheme()
 {
 	for (int i = 0; i < NOKIA_THEME_NOTE_COUNT; i++)
 	{
+		if (audioMode != 33) {break;}
+		
 		int modValue = calculateMODValue(nokiaTheme[i]);
 		TPM0->MOD = modValue;
 		TPM0_C3V = modValue * 0.2;
 		osDelay(nokiaThemeTempo[i]);
-	}
-}
-
-void playNokiaRingtone()
-{
-	for (int i = 0; i < NOKIA_RINGTONE_NOTE_COUNT; i++)
-	{
-		if (audioMode != 31) {break;}
-		
-		int modValue = calculateMODValue(nokiaRingtone[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(nokiaRingtoneTempo[i]);
 	}
 }
 
@@ -358,6 +420,9 @@ void soundOff()
  *---------------------------------------------------------------------------*/
 void tAudio(void *arguments)
 {
+	soundOff();
+	osSemaphoreAcquire(startupSem, osWaitForever);
+	
 	for (;;)
 	{
 		switch (audioMode)
@@ -377,13 +442,12 @@ void tAudio(void *arguments)
 				break;
 			// Connected to bluetooth
 			case 33:
-				osDelay(300);
+				osDelay(500);
 				playNokiaTheme();
-				soundOff();
-				osDelay(1000);
 				audioMode = 31;
 				break;
 		}
+		osDelay(50);
 	}
 }
 
@@ -393,16 +457,14 @@ void tAudio(void *arguments)
 void tBrain(void *arguments) 
 {
 	//Receive UART instructions via interrupt, set global variable as interrupt instruction
-	//tBrain will sort number, and set global variables accordingly - if number == 10, set DIRECTION = 10, DIRECTION = global variable
-	//Should have highest priority as have to process UART data as it appears --> Else loss of data
 	for (;;)
 	{
-		int command = UARTCommand;
 		//Movement Commands
-		if (command < 10)
+		if (UARTCommand < 10)
 		{
+			motorSelection = UARTCommand;
 			// Update LED pattern when not moving
-			if (command == 0) 
+			if (motorSelection == 0) 
 			{
 				LEDMode = 23;
 			}
@@ -410,12 +472,11 @@ void tBrain(void *arguments)
 			{
 				LEDMode = 22;
 			}
-			motorSelection = command;
 		}
 		//Speed Selection
-		else if (command < 20)
+		else if (UARTCommand < 20)
 		{
-			switch (command)
+			switch (UARTCommand)
 			{
 				// High Speed
 				case 15:
@@ -427,60 +488,36 @@ void tBrain(void *arguments)
 					break;
 			}
 		}
-		//LED Commands
-		else if (command < 30)
-		{
-			LEDMode = command;
-		}
 		//Audio Commands
-		else if (command < 40)
+		else if (UARTCommand < 40)
 		{
-			audioMode = command;
+			audioMode = UARTCommand;
 		}
 		//Connection to bluetooth
-		else if (command == 90)
+		else if (UARTCommand == 90)
 		{
+			UARTCommand = UART_NO_COMMAND;
+			//Release sempahores to start threads
+			osSemaphoreRelease(startupSem);
+			osSemaphoreRelease(startupSem);
+			osSemaphoreRelease(startupSem);
+			
 			audioMode = 33;
-			osDelay(100);
 			LEDMode = 21;
 		}
 		//Start self driving mode
-		else if (command == 100)
+		else if (UARTCommand == 100)
 		{
+			UARTCommand = UART_NO_COMMAND;
 			osThreadNew(tSelfDrivingMode, NULL, NULL);
 		}
+		osDelay(25);
 	}
 }
 
 /*----------------------------------------------------------------------------
  * TEST & DEBUGGING CODE - TO REMOVE
  *---------------------------------------------------------------------------*/
-// Flash on board LED between red and green
-void toggleLED(void *argument)
-{
-	for (;;)
-	{
-		UARTCommand = 20;
-		osDelay(5000);
-		UARTCommand = 21;
-		osDelay(5000);
-	}
-}
-
-void toggleAudio(void *argument)
-{
-	//for (;;)
-	//{
-		//UARTCommand = 31;
-		//osDelay(12000);
-		//UARTCommand = 32;
-		//osDelay(12000);
-	//}
-			
-	osDelay(5500);
-	UARTCommand = 33;
-}
-
 // Repeatedly drive motors in all directions to move motor
 void toggleMOTOR(void *argument)
 {
@@ -523,6 +560,7 @@ void testUltrasonic(void *argument)
 	}
 }
 
+// Starts self Driving mode - Re toggled after every 8 seconds
 void toggleSelfDrivingMode(void *argument)
 {
 	for (;;)
@@ -530,6 +568,15 @@ void toggleSelfDrivingMode(void *argument)
 		osDelay(8000);
 		UARTCommand = 100;
 	}
+}
+
+void toggleBluetoothConnection(void *argument)
+{
+	osDelay(8000);
+	UARTCommand = 90;
+	
+	osDelay(10000);
+	UARTCommand = 100;
 }
 
 /*----------------------------------------------------------------------------
@@ -553,7 +600,7 @@ int main (void)
 	offLED();
  
   osKernelInitialize();                 // Initialize CMSIS-RTOS
-	myMutex = osMutexNew(NULL);
+	startupSem = osSemaphoreNew(3, 0, NULL);
 	
 	//Create threads
 	osThreadNew(tBrain, NULL, NULL);
@@ -562,8 +609,7 @@ int main (void)
 	osThreadNew(tAudio, NULL, NULL);
 	
 	// Test Threads - For testing purposes
-	//osThreadNew(toggleLED, NULL, NULL);
-	//osThreadNew(toggleAudio, NULL, NULL);
+	osThreadNew(toggleBluetoothConnection, NULL, NULL);
 	//osThreadNew(toggleSelfDrivingMode, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
 	//osThreadNew(testUltrasonic, NULL, NULL);

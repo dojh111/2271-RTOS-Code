@@ -33,14 +33,6 @@ void PIT_IRQHandler()
 		// Disable PIT Timer
 		PIT->MCR |= PIT_MCR_MDIS_MASK;
 	}
-	// PIT Timeout - 50us
-	else if ((ultrasonicMode == 1) && (elapsedTime >= TIMEOUT))
-	{
-			ultrasonicMode = 0;
-			// Disable PIT Timer
-			PIT->MCR |= PIT_MCR_MDIS_MASK;
-			elapsedTime = 0;
-	}
 	
 	// Clear Interrupt flag
 	PIT_TFLG0 |= PIT_TFLG_TIF_MASK;
