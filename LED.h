@@ -13,16 +13,7 @@
 #define TENTH_LED_G				21		// Port E Pin 21
 
 // Ports for RED LED
-#define FIRST_LED_R				1			// PortA Pin 1			
-#define SECOND_LED_R			2			// PortA Pin 2
-#define THIRD_LED_R				4			// PortD Pin 4
-#define FOURTH_LED_R			12		// PortA Pin 12
-#define FIFTH_LED_R				4			// PortA Pin 4
-#define SIXTH_LED_R				5			// PortA Pin 5
-#define SEVENTH_LED_R			13		// PortA Pin 13
-#define EIGHTH_LED_R			5			// PortD Pin 5
-#define NINTH_LED_R				0			// PortD Pin 0
-#define TENTH_LED_R				17		// PortA Pin 17
+#define LED_R							17		// PortA Pin 17			
 
 #define MASK(x)					(1 << (x))
 
@@ -31,42 +22,14 @@ unsigned int counterLED = 0;
 void InitGPIOred(void)
 {
 	// Enabling clock to PORT A and PORT D
-	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTD_MASK);
+	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK);
 	
-	// Configure MUX settings to make all 10 pins GPIO
-	PORTA->PCR[FIRST_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[FIRST_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTA->PCR[SECOND_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[SECOND_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTD->PCR[THIRD_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTD->PCR[THIRD_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTA->PCR[FOURTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[FOURTH_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTA->PCR[FIFTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[FIFTH_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTA->PCR[SIXTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[SIXTH_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTA->PCR[SEVENTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[SEVENTH_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTD->PCR[EIGHTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTD->PCR[EIGHTH_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTD->PCR[NINTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTD->PCR[NINTH_LED_R] |= PORT_PCR_MUX(1);
-	
-	PORTA->PCR[TENTH_LED_R] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[TENTH_LED_R] |= PORT_PCR_MUX(1);
+	// Configure MUX settings to make the pin GPIO
+	PORTA->PCR[LED_R] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[LED_R] |= PORT_PCR_MUX(1);
 	
 	// Set Data Direction Registers for PortA and PortD
-	PTA->PDDR |= (MASK(FIRST_LED_R) | MASK(SECOND_LED_R) | MASK(FOURTH_LED_R) | MASK(FIFTH_LED_R) | MASK(SIXTH_LED_R) | MASK(SEVENTH_LED_R) | MASK(TENTH_LED_R));
-	PTD->PDDR |= (MASK(THIRD_LED_R) | MASK(EIGHTH_LED_R) | MASK(NINTH_LED_R));
+	PTA->PDDR |= MASK(LED_R);
 	
 }
 
@@ -114,8 +77,7 @@ void InitGPIOgreen(void)
 
 void offLEDred(void)
 {
-	PTA->PCOR = (MASK(FIRST_LED_R) | MASK(SECOND_LED_R) | MASK(FOURTH_LED_R) | MASK(FIFTH_LED_R) | MASK(SIXTH_LED_R) | MASK(SEVENTH_LED_R) | MASK(TENTH_LED_R));
-	PTD->PCOR = (MASK(THIRD_LED_R) | MASK(EIGHTH_LED_R) | MASK(NINTH_LED_R));
+	PTA->PCOR = MASK(LED_R);
 }
 
 void offLEDgreen(void)
@@ -181,14 +143,5 @@ void onLEDgreen(void)
 
 void onLEDred(void)
 {
-	PTA->PSOR = MASK(FIRST_LED_R);
-	PTA->PSOR = MASK(SECOND_LED_R);
-	PTD->PSOR = MASK(THIRD_LED_R);
-	PTA->PSOR = MASK(FOURTH_LED_R);
-	PTA->PSOR = MASK(FIFTH_LED_R);
-	PTA->PSOR = MASK(SIXTH_LED_R);
-	PTA->PSOR = MASK(SEVENTH_LED_R);
-	PTD->PSOR = MASK(EIGHTH_LED_R);
-	PTD->PSOR = MASK(NINTH_LED_R);
-	PTA->PSOR = MASK(TENTH_LED_R);
+	PTA->PSOR = MASK(LED_R);
 }

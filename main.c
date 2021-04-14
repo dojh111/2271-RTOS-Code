@@ -54,7 +54,6 @@ void UART2_IRQHandler()
 	{
 		UARTCommand = UART2->D;
 	}
-	
 	// Error cases
 	if (UART2->S1 & (UART_S1_OR_MASK | UART_S1_NF_MASK | UART_S1_FE_MASK | UART_S1_PF_MASK))
 	{
@@ -73,65 +72,61 @@ void coneTurn()
 	UARTCommand = 4;
 	osDelay(325);
 	UARTCommand = 0;
-	osDelay(100);
-	
-	// Forward
-	UARTCommand = 1;
-	osDelay(350);
-	UARTCommand = 0;
-	osDelay(100);
-	
-	// Pivot Right
-	UARTCommand = 3;
-	osDelay(450);
-	UARTCommand = 0;
-	osDelay(100);
-	
-	// Forward
-	UARTCommand = 1;
-	osDelay(350);
-	UARTCommand = 0;
-	osDelay(100);
-	
-	// Pivot Right
-	UARTCommand = 3;
-	osDelay(450);
-	UARTCommand = 0;
-	osDelay(100);
-	
-	// Forward
-	UARTCommand = 1;
 	osDelay(300);
-	UARTCommand = 0;
-	osDelay(100);
 	
-	// Pivot Right
+	// Forward 1
+	UARTCommand = 1;
+	osDelay(350);
+	UARTCommand = 0;
+	osDelay(300);
+	
+	// Pivot Right 1
 	UARTCommand = 3;
-	osDelay(600);
+	osDelay(500);
 	UARTCommand = 0;
-	osDelay(100);
+	osDelay(300);
 	
-	// Forward
+	// Forward 2
 	UARTCommand = 1;
 	osDelay(400);
 	UARTCommand = 0;
-	osDelay(100);
+	osDelay(300);
+	
+	// Pivot Right 2
+	UARTCommand = 3;
+	osDelay(600);
+	UARTCommand = 0;
+	osDelay(300);
+	
+	// Forward 3
+	UARTCommand = 1;
+	osDelay(450);
+	UARTCommand = 0;
+	osDelay(300);
+	
+	// Pivot Right
+	UARTCommand = 3;
+	osDelay(500);
+	UARTCommand = 0;
+	osDelay(300);
+	
+	// Forward 4
+	UARTCommand = 1;
+	osDelay(500);
+	UARTCommand = 0;
+	osDelay(300);
 	
 	// Pivot Left
 	UARTCommand = 4;
 	osDelay(350);
 	UARTCommand = 0;
-	osDelay(100);
+	osDelay(300);
 	
 	speedSelection = 0;
 }
 
 void tSelfDrivingMode(void *arguments)
 {
-	int initialDistance;
-	int returnDistance;
-	int lowerMargin;
-	int upperMargin;
 	// Save current speed mode
 	int currentSpeed = speedSelection;
 	
@@ -144,7 +139,6 @@ void tSelfDrivingMode(void *arguments)
 	
 	// Initial range
 	startRanging();
-	initialDistance = distance;
 	osDelay(100);
 	
 	UARTCommand = 1;
@@ -162,27 +156,18 @@ void tSelfDrivingMode(void *arguments)
 	
 	// Initiate Return Sequence
 	startRanging();
-	returnDistance = distance;
-	lowerMargin = initialDistance - DISTANCE_ERROR_MARGIN;
-	upperMargin = initialDistance + DISTANCE_ERROR_MARGIN;
+	osDelay(100);
 	
-	// Robot facing correct direction of return cone
-	if ((returnDistance >= lowerMargin) && (returnDistance <= upperMargin))
+	UARTCommand = 1;
+	// Constantly range distance and move forward
+	while (distance > STOP_DISTANCE)
 	{
-		UARTCommand = 1;
-		// Constantly range distance and move forward
-		while (distance > STOP_DISTANCE)
-		{
-			startRanging();
-			osDelay(100);
-		}
-		UARTCommand = 0;
+		startRanging();
+		osDelay(100);
 	}
-	// Go straight regardless, hardcoded distance
-	else
-	{
-		
-	}
+	UARTCommand = 0;
+	osDelay(100);
+
 	
 	// End of self-driving mode
 	UARTCommand = 0;
@@ -270,12 +255,12 @@ void tMotor(void *arguments)
 				TPM1_C0V = dutyCycle * 0.2;
 				TPM1_C1V = 0;
 			
-				TPM2_C0V = dutyCycle;
+				TPM2_C0V = dutyCycle * 0.8;
 				TPM2_C1V = 0;
 				break;
 			case 6:
 				//Moving Left
-				TPM1_C0V = dutyCycle;
+				TPM1_C0V = dutyCycle * 0.8;
 				TPM1_C1V = 0;
 			
 				TPM2_C0V = dutyCycle * 0.2;
@@ -496,7 +481,6 @@ void tBrain(void *arguments)
 		//Connection to bluetooth
 		else if (UARTCommand == 90)
 		{
-			UARTCommand = UART_NO_COMMAND;
 			//Release sempahores to start threads
 			osSemaphoreRelease(startupSem);
 			osSemaphoreRelease(startupSem);
@@ -504,6 +488,8 @@ void tBrain(void *arguments)
 			
 			audioMode = 33;
 			LEDMode = 21;
+			
+			UARTCommand = 0;
 		}
 		//Start self driving mode
 		else if (UARTCommand == 100)
@@ -572,11 +558,8 @@ void toggleSelfDrivingMode(void *argument)
 
 void toggleBluetoothConnection(void *argument)
 {
-	osDelay(8000);
+	osDelay(4000);
 	UARTCommand = 90;
-	
-	osDelay(10000);
-	UARTCommand = 100;
 }
 
 /*----------------------------------------------------------------------------
@@ -609,7 +592,7 @@ int main (void)
 	osThreadNew(tAudio, NULL, NULL);
 	
 	// Test Threads - For testing purposes
-	osThreadNew(toggleBluetoothConnection, NULL, NULL);
+	//osThreadNew(toggleBluetoothConnection, NULL, NULL);
 	//osThreadNew(toggleSelfDrivingMode, NULL, NULL);
 	//osThreadNew(toggleMOTOR, NULL, NULL);
 	//osThreadNew(testUltrasonic, NULL, NULL);
