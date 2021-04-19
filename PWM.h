@@ -87,3 +87,65 @@ int calculateMODValue(int targetFrequency)
 {
 	return (CLOCK_FREQUENCY / PRESCALAR) / targetFrequency;
 }
+
+/*----------------------------------------------------------------------------
+ * Songs
+ *---------------------------------------------------------------------------*/
+// Plays musical notes according to delay
+void playBlindingLights(int currentAudio)
+{
+	for (int i = 0; i < BLINDING_LIGHTS_NOTE_COUNT; i++)
+	{
+		if (currentAudio != 31) {break;}
+			
+		int modValue = calculateMODValue(blindingLights[i]);
+		TPM0->MOD = modValue;
+		TPM0_C3V = modValue * 0.2;
+		osDelay(blindingLightsTempo[i]);
+	}
+}
+
+// Plays musical notes according to delay
+void playTakeOnMe(int currentAudio)
+{
+	for (int i = 0; i < TAKE_ON_ME_NOTE_COUNT; i++)
+	{
+		if (currentAudio != 32) {break;}
+		
+		int modValue = calculateMODValue(takeOnMe[i]);
+		TPM0->MOD = modValue;
+		TPM0_C3V = modValue * 0.2;
+		osDelay(takeOnMeTempo[i]);
+	}
+}
+
+// Play bluetooth connect tone
+void playNokiaTheme(int currentAudio)
+{
+	for (int i = 0; i < NOKIA_THEME_NOTE_COUNT; i++)
+	{
+		if (currentAudio != 33) {break;}
+		
+		int modValue = calculateMODValue(nokiaTheme[i]);
+		TPM0->MOD = modValue;
+		TPM0_C3V = modValue * 0.2;
+		osDelay(nokiaThemeTempo[i]);
+	}
+}
+
+void playScale()
+{
+	for (int i = 0; i < SCALE_NOTE_COUNT; i++)
+	{
+		int modValue = calculateMODValue(scale[i]);
+		TPM0->MOD = modValue;
+		TPM0_C3V = modValue * 0.2;
+		osDelay(QUAVER);
+	}
+}
+
+// Stops all sound
+void soundOff()
+{
+	TPM0_C3V = 0;
+}

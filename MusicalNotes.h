@@ -171,5 +171,3 @@ int blindingLightsTempo[] =
 													CROTCHET, BREAK,
 													DOUBLESEMIBREEVE, BREAK,
 												};
-
-

@@ -76,25 +76,25 @@ void coneTurn()
 	
 	// Forward 1
 	UARTCommand = 1;
-	osDelay(350);
+	osDelay(275);
 	UARTCommand = 0;
 	osDelay(300);
 	
 	// Pivot Right 1
 	UARTCommand = 3;
-	osDelay(500);
+	osDelay(450);
 	UARTCommand = 0;
 	osDelay(300);
 	
 	// Forward 2
 	UARTCommand = 1;
-	osDelay(400);
+	osDelay(450);
 	UARTCommand = 0;
 	osDelay(300);
 	
 	// Pivot Right 2
 	UARTCommand = 3;
-	osDelay(600);
+	osDelay(500);
 	UARTCommand = 0;
 	osDelay(300);
 	
@@ -106,25 +106,28 @@ void coneTurn()
 	
 	// Pivot Right
 	UARTCommand = 3;
-	osDelay(500);
+	osDelay(350);
 	UARTCommand = 0;
 	osDelay(300);
 	
 	// Forward 4
 	UARTCommand = 1;
-	osDelay(500);
+	osDelay(400);
 	UARTCommand = 0;
 	osDelay(300);
 	
 	// Pivot Left
 	UARTCommand = 4;
-	osDelay(350);
+	osDelay(260);
 	UARTCommand = 0;
 	osDelay(300);
 	
 	speedSelection = 0;
 }
 
+/*----------------------------------------------------------------------------
+ * Self Driving Mode Thread - tSelfDrivingMode
+ *---------------------------------------------------------------------------*/
 void tSelfDrivingMode(void *arguments)
 {
 	// Save current speed mode
@@ -339,68 +342,6 @@ void tLED(void *arguments)
 }
 
 /*----------------------------------------------------------------------------
- * Songs
- *---------------------------------------------------------------------------*/
-// Plays musical notes according to delay
-void playBlindingLights()
-{
-	for (int i = 0; i < BLINDING_LIGHTS_NOTE_COUNT; i++)
-	{
-		if (audioMode != 31) {break;}
-			
-		int modValue = calculateMODValue(blindingLights[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(blindingLightsTempo[i]);
-	}
-}
-
-// Plays musical notes according to delay
-void playTakeOnMe()
-{
-	for (int i = 0; i < TAKE_ON_ME_NOTE_COUNT; i++)
-	{
-		if (audioMode != 32) {break;}
-		
-		int modValue = calculateMODValue(takeOnMe[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(takeOnMeTempo[i]);
-	}
-}
-
-// Play bluetooth connect tone
-void playNokiaTheme()
-{
-	for (int i = 0; i < NOKIA_THEME_NOTE_COUNT; i++)
-	{
-		if (audioMode != 33) {break;}
-		
-		int modValue = calculateMODValue(nokiaTheme[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(nokiaThemeTempo[i]);
-	}
-}
-
-void playScale()
-{
-	for (int i = 0; i < SCALE_NOTE_COUNT; i++)
-	{
-		int modValue = calculateMODValue(scale[i]);
-		TPM0->MOD = modValue;
-		TPM0_C3V = modValue * 0.2;
-		osDelay(QUAVER);
-	}
-}
-
-// Stops all sound
-void soundOff()
-{
-	TPM0_C3V = 0;
-}
-
-/*----------------------------------------------------------------------------
  * LED Control Thread - tAudio
  *---------------------------------------------------------------------------*/
 void tAudio(void *arguments)
@@ -419,16 +360,16 @@ void tAudio(void *arguments)
 			// Default Song
 			case 31:
 				//playNokiaRingtone();
-				playBlindingLights();
+				playBlindingLights(audioMode);
 				break;
 			// End Song
 			case 32:
-				playTakeOnMe();
+				playTakeOnMe(audioMode);
 				break;
 			// Connected to bluetooth
 			case 33:
 				osDelay(500);
-				playNokiaTheme();
+				playNokiaTheme(audioMode);
 				audioMode = 31;
 				break;
 		}
@@ -500,71 +441,6 @@ void tBrain(void *arguments)
 		osDelay(25);
 	}
 }
-
-/*----------------------------------------------------------------------------
- * TEST & DEBUGGING CODE - TO REMOVE
- *---------------------------------------------------------------------------*/
-// Repeatedly drive motors in all directions to move motor
-void toggleMOTOR(void *argument)
-{
-	for (;;)
-	{
-		UARTCommand = 0;
-		osDelay(500);
-		UARTCommand = 1;
-		osDelay(300);
-		UARTCommand = 0;
-		osDelay(500);
-		UARTCommand = 2;
-		osDelay(300);
-		UARTCommand = 0;
-		osDelay(500);
-		UARTCommand = 3;
-		osDelay(300);
-		UARTCommand = 0;
-		osDelay(500);
-		UARTCommand = 4;
-		osDelay(300);
-		UARTCommand = 0;
-		osDelay(500);
-		UARTCommand = 5;
-		osDelay(300);
-		UARTCommand = 0;
-		osDelay(500);
-		UARTCommand = 6;
-		osDelay(300);
-	}
-}
-
-// Repeatedly range for distance
-void testUltrasonic(void *argument)
-{
-	for (;;)
-	{
-		startRanging();
-		osDelay(100);
-	}
-}
-
-// Starts self Driving mode - Re toggled after every 8 seconds
-void toggleSelfDrivingMode(void *argument)
-{
-	for (;;)
-	{
-		osDelay(8000);
-		UARTCommand = 100;
-	}
-}
-
-void toggleBluetoothConnection(void *argument)
-{
-	osDelay(4000);
-	UARTCommand = 90;
-}
-
-/*----------------------------------------------------------------------------
- * TEST CODE - TO REMOVE
- *---------------------------------------------------------------------------*/
  
 int main (void) 
 {
@@ -586,17 +462,11 @@ int main (void)
 	startupSem = osSemaphoreNew(3, 0, NULL);
 	
 	//Create threads
-	osThreadNew(tBrain, NULL, NULL);
+	osThreadNew(tBrain, NULL, &thread_attr);
 	osThreadNew(tMotor, NULL, NULL);
 	osThreadNew(tLED, NULL, NULL);
 	osThreadNew(tAudio, NULL, NULL);
-	
-	// Test Threads - For testing purposes
-	//osThreadNew(toggleBluetoothConnection, NULL, NULL);
-	//osThreadNew(toggleSelfDrivingMode, NULL, NULL);
-	//osThreadNew(toggleMOTOR, NULL, NULL);
-	//osThreadNew(testUltrasonic, NULL, NULL);
-	
+
   osKernelStart();                      // Start thread execution
 	
   for (;;) {}
