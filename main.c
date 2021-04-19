@@ -104,9 +104,9 @@ void coneTurn()
 	UARTCommand = 0;
 	osDelay(300);
 	
-	// Pivot Right
+	// Pivot Right 3
 	UARTCommand = 3;
-	osDelay(350);
+	osDelay(460);
 	UARTCommand = 0;
 	osDelay(300);
 	
@@ -118,7 +118,7 @@ void coneTurn()
 	
 	// Pivot Left
 	UARTCommand = 4;
-	osDelay(260);
+	osDelay(250);
 	UARTCommand = 0;
 	osDelay(300);
 	
