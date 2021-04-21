@@ -27,8 +27,12 @@
 #define STOP_DISTANCE 25								// Robot ultrasonic sensor stop distance
 #define DISTANCE_ERROR_MARGIN 20				// Margin for error to determine if robot is off course
 
-const osThreadAttr_t thread_attr = {
+const osThreadAttr_t thread_attr_AN = {
 	.priority = osPriorityAboveNormal
+};
+
+const osThreadAttr_t thread_attr_H = {
+	.priority = osPriorityHigh
 };
 
 osSemaphoreId_t startupSem;
@@ -436,7 +440,7 @@ void tBrain(void *arguments)
 		else if (UARTCommand == 100)
 		{
 			UARTCommand = UART_NO_COMMAND;
-			osThreadNew(tSelfDrivingMode, NULL, NULL);
+			osThreadNew(tSelfDrivingMode, NULL, &thread_attr_AN);
 		}
 		osDelay(25);
 	}
@@ -462,8 +466,8 @@ int main (void)
 	startupSem = osSemaphoreNew(3, 0, NULL);
 	
 	//Create threads
-	osThreadNew(tBrain, NULL, &thread_attr);
-	osThreadNew(tMotor, NULL, NULL);
+	osThreadNew(tBrain, NULL, &thread_attr_H);
+	osThreadNew(tMotor, NULL, &thread_attr_AN);
 	osThreadNew(tLED, NULL, NULL);
 	osThreadNew(tAudio, NULL, NULL);
 
